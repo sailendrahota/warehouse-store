@@ -11,7 +11,7 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
 
 	@Override
 	public List<Warehouse> getAll() {
-		return listAll().stream().map(DbWarehouse::toWarehouse).toList();
+		return find("archivedAt is null").list().stream().map(DbWarehouse::toWarehouse).toList();
 	}
 
 	@Override
@@ -25,7 +25,8 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
 		dbWarehouse.createdAt = warehouse.createdAt;
 		dbWarehouse.archivedAt = warehouse.archivedAt;
 
-		persist(dbWarehouse);
+		persistAndFlush(dbWarehouse);
+		warehouse.id = dbWarehouse.id;
 	}
 
 	@Override
@@ -60,4 +61,11 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
 
 		return dbWarehouse != null ? dbWarehouse.toWarehouse() : null;
 	}
+
+	@Override
+	public Warehouse findActiveById(Long id) {
+		DbWarehouse dbWarehouse = find("id = ?1 and archivedAt is null", id).firstResult();
+		return dbWarehouse != null ? dbWarehouse.toWarehouse() : null;
+	}
+
 }

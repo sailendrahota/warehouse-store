@@ -12,6 +12,7 @@ import com.warehouse.api.WarehouseResource;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.WebApplicationException;
 
 @RequestScoped
 public class WarehouseResourceImpl implements WarehouseResource {
@@ -46,9 +47,18 @@ public class WarehouseResourceImpl implements WarehouseResource {
 	@Override
 	public com.warehouse.api.beans.Warehouse getAWarehouseUnitByID(String id) {
 
-		Warehouse warehouse = warehouseStore.findByBusinessUnitCode(id);
+		Long warehouseId;
+
+		try {
+			warehouseId = Long.valueOf(id);
+		} catch (NumberFormatException e) {
+			throw new WebApplicationException("Invalid warehouse id: " + id, 400);
+		}
+
+		Warehouse warehouse = warehouseStore.findActiveById(warehouseId);
+
 		if (warehouse == null) {
-			throw new IllegalArgumentException("Warehouse with business unit code " + id + " not found.");
+			throw new WebApplicationException("Warehouse with id " + id + " does not exist.", 404);
 		}
 
 		return toWarehouseResponse(warehouse);
@@ -57,10 +67,18 @@ public class WarehouseResourceImpl implements WarehouseResource {
 	@Override
 	public void archiveAWarehouseUnitByID(String id) {
 
-		Warehouse warehouse = warehouseStore.findByBusinessUnitCode(id);
+		Long warehouseId;
+
+		try {
+			warehouseId = Long.valueOf(id);
+		} catch (NumberFormatException e) {
+			throw new WebApplicationException("Invalid warehouse id: " + id, 400);
+		}
+
+		Warehouse warehouse = warehouseStore.findActiveById(warehouseId);
 
 		if (warehouse == null) {
-			throw new IllegalArgumentException("Warehouse with business unit code " + id + " not found.");
+			throw new WebApplicationException("Warehouse with id " + id + " does not exist.", 404);
 		}
 
 		archiveWarehouseOperation.archive(warehouse);
@@ -95,7 +113,7 @@ public class WarehouseResourceImpl implements WarehouseResource {
 	private com.warehouse.api.beans.Warehouse toWarehouseResponse(Warehouse warehouse) {
 
 		var response = new com.warehouse.api.beans.Warehouse();
-
+		response.setId(warehouse.id != null ? warehouse.id.toString() : null);
 		response.setBusinessUnitCode(warehouse.businessUnitCode);
 		response.setLocation(warehouse.location);
 		response.setCapacity(warehouse.capacity);

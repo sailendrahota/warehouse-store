@@ -1,13 +1,19 @@
 package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
-import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.junit.jupiter.api.Test;
+
+import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
+import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
+
+import jakarta.ws.rs.WebApplicationException;
+
 
 class ArchiveWarehouseUseCaseTest {
 
@@ -33,7 +39,8 @@ class ArchiveWarehouseUseCaseTest {
 
 		ArchiveWarehouseUseCase useCase = new ArchiveWarehouseUseCase(warehouseStore);
 
-		assertThrows(IllegalArgumentException.class, () -> useCase.archive(null));
+		WebApplicationException exception =assertThrows(WebApplicationException.class, () -> useCase.archive(null));
+		assertEquals(400, exception.getResponse().getStatus());
 	}
 
 	@Test
@@ -47,7 +54,8 @@ class ArchiveWarehouseUseCaseTest {
 		warehouse.businessUnitCode = "MWH.100";
 		warehouse.archivedAt = java.time.LocalDateTime.now();
 
-		assertThrows(IllegalArgumentException.class, () -> useCase.archive(warehouse));
+		WebApplicationException exception=assertThrows(WebApplicationException.class, () -> useCase.archive(warehouse));
+		assertEquals(404, exception.getResponse().getStatus());
 	}
 
 	static class FakeWarehouseStore implements WarehouseStore {
@@ -77,6 +85,12 @@ class ArchiveWarehouseUseCaseTest {
 		@Override
 		public Warehouse findByBusinessUnitCode(String buCode) {
 			return warehouses.stream().filter(w -> w.businessUnitCode.equals(buCode)).findFirst().orElse(null);
+		}
+
+		@Override
+		public Warehouse findActiveById(Long id) {
+			return warehouses.stream().filter(w -> w.id != null && w.id.equals(id)).filter(w -> w.archivedAt == null)
+					.findFirst().orElse(null);
 		}
 	}
 }

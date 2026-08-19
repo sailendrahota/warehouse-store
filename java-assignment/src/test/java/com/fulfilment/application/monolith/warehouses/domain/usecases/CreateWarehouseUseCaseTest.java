@@ -3,13 +3,18 @@ package com.fulfilment.application.monolith.warehouses.domain.usecases;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+
 import com.fulfilment.application.monolith.warehouses.domain.models.Location;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.LocationResolver;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
-import java.util.ArrayList;
-import java.util.List;
-import org.junit.jupiter.api.Test;
+
+import jakarta.ws.rs.WebApplicationException;
+
 
 class CreateWarehouseUseCaseTest {
 
@@ -44,7 +49,9 @@ class CreateWarehouseUseCaseTest {
 
 		Warehouse newWarehouse = warehouse("MWH.100", "ZWOLLE-001", 30, 10);
 
-		assertThrows(IllegalArgumentException.class, () -> useCase.create(newWarehouse));
+		WebApplicationException exception=assertThrows(WebApplicationException.class, () -> useCase.create(newWarehouse));
+		assertEquals(404, exception.getResponse().getStatus());
+		
 	}
 
 	@Test
@@ -58,7 +65,8 @@ class CreateWarehouseUseCaseTest {
 
 		Warehouse warehouse = warehouse("MWH.100", "UNKNOWN", 30, 10);
 
-		assertThrows(IllegalArgumentException.class, () -> useCase.create(warehouse));
+		WebApplicationException exception=assertThrows(WebApplicationException.class, () -> useCase.create(warehouse));
+		assertEquals(404, exception.getResponse().getStatus());
 	}
 
 	@Test
@@ -76,7 +84,8 @@ class CreateWarehouseUseCaseTest {
 
 		Warehouse newWarehouse = warehouse("MWH.003", "ZWOLLE-001", 20, 10);
 
-		assertThrows(IllegalArgumentException.class, () -> useCase.create(newWarehouse));
+		WebApplicationException exception=assertThrows(WebApplicationException.class, () -> useCase.create(newWarehouse));
+		assertEquals(404, exception.getResponse().getStatus());
 	}
 
 	@Test
@@ -90,7 +99,8 @@ class CreateWarehouseUseCaseTest {
 
 		Warehouse warehouse = warehouse("MWH.100", "ZWOLLE-001", 60, 20);
 
-		assertThrows(IllegalArgumentException.class, () -> useCase.create(warehouse));
+		WebApplicationException exception= assertThrows(WebApplicationException.class, () -> useCase.create(warehouse));
+		assertEquals(404, exception.getResponse().getStatus());
 	}
 
 	@Test
@@ -104,7 +114,8 @@ class CreateWarehouseUseCaseTest {
 
 		Warehouse warehouse = warehouse("MWH.100", "ZWOLLE-001", 40, 50);
 
-		assertThrows(IllegalArgumentException.class, () -> useCase.create(warehouse));
+		WebApplicationException exception=assertThrows(WebApplicationException.class, () -> useCase.create(warehouse));
+		assertEquals(400, exception.getResponse().getStatus());
 	}
 
 	@Test
@@ -120,7 +131,8 @@ class CreateWarehouseUseCaseTest {
 
 		Warehouse warehouse = warehouse("MWH.002", "ZWOLLE-001", 40, 20);
 
-		assertThrows(IllegalArgumentException.class, () -> useCase.create(warehouse));
+		WebApplicationException exception= assertThrows(WebApplicationException.class,() -> useCase.create(warehouse));
+		assertEquals(404, exception.getResponse().getStatus());
 	}
 
 	@Test
@@ -200,6 +212,12 @@ class CreateWarehouseUseCaseTest {
 		@Override
 		public Warehouse findByBusinessUnitCode(String buCode) {
 			return warehouses.stream().filter(w -> w.businessUnitCode.equals(buCode)).findFirst().orElse(null);
+		}
+
+		@Override
+		public Warehouse findActiveById(Long id) {
+			return warehouses.stream().filter(w -> w.id != null && w.id.equals(id)).filter(w -> w.archivedAt == null)
+					.findFirst().orElse(null);
 		}
 	}
 }

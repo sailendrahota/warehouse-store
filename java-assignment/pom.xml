@@ -69,10 +69,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${compiler-plugin.version}</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
-                    <!-- the parameters=true option is critical so that RESTEasy works fine -->
-                    <parameters>true</parameters>
+                     <release>17</release>
+                     <parameters>true</parameters>
                 </configuration>
             </plugin>
 
@@ -149,6 +147,7 @@
                             <excludes>
                                 <!-- Exclude auto-generated OpenAPI / JaxRS sources if necessary -->
                                 <exclude>**/generated-sources/**</exclude>
+                                 <!--<exclude>com/warehouse/api/**</exclude>-->
                             </excludes>
                         </configuration>
                     </execution>

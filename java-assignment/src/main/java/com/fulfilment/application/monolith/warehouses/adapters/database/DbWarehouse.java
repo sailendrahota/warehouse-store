@@ -13,30 +13,34 @@ import java.time.LocalDateTime;
 @Cacheable
 public class DbWarehouse {
 
-  @Id @GeneratedValue public Long id;
+	@Id
+	@GeneratedValue
+	public Long id;
 
-  public String businessUnitCode;
+	public String businessUnitCode;
 
-  public String location;
+	public String location;
 
-  public Integer capacity;
+	public Integer capacity;
 
-  public Integer stock;
+	public Integer stock;
 
-  public LocalDateTime createdAt;
+	public LocalDateTime createdAt;
 
-  public LocalDateTime archivedAt;
+	public LocalDateTime archivedAt;
 
-  public DbWarehouse() {}
+	public DbWarehouse() {
+	}
 
-  public Warehouse toWarehouse() {
-    var warehouse = new Warehouse();
-    warehouse.businessUnitCode = this.businessUnitCode;
-    warehouse.location = this.location;
-    warehouse.capacity = this.capacity;
-    warehouse.stock = this.stock;
-    warehouse.createdAt = this.createdAt;
-    warehouse.archivedAt = this.archivedAt;
-    return warehouse;
-  }
+	public Warehouse toWarehouse() {
+		var warehouse = new Warehouse();
+		warehouse.id = this.id;
+		warehouse.businessUnitCode = this.businessUnitCode;
+		warehouse.location = this.location;
+		warehouse.capacity = this.capacity;
+		warehouse.stock = this.stock;
+		warehouse.createdAt = this.createdAt;
+		warehouse.archivedAt = this.archivedAt;
+		return warehouse;
+	}
 }
