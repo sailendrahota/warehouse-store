@@ -26,4 +26,4 @@ jobs:
       - name: Build and run coverage check
         # Execute Maven inside the java-assignment subfolder
         working-directory: ./java-assignment
-        run: ./mvnw clean verify
+        run: bash ./mvnw clean verify
