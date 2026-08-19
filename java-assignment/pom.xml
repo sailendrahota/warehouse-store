@@ -60,7 +60,6 @@
             <artifactId>quarkus-openapi-generator-server</artifactId>
             <version>2.4.7</version>
         </dependency>
-
     </dependencies>
 
     <build>
@@ -76,6 +75,7 @@
                     <parameters>true</parameters>
                 </configuration>
             </plugin>
+
             <plugin>
                 <!-- you need this specific version to integrate with the other build helpers -->
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -87,6 +87,7 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
+
             <plugin>
                 <!-- This is what injects the magic Quarkus bytecode -->
                 <groupId>${quarkus.platform.group-id}</groupId>
@@ -99,6 +100,57 @@
                             <goal>generate-code</goal>
                             <goal>generate-code-tests</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- JaCoCo Code Coverage Plugin (Placed here so standard builds run it!) -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.11</version>
+                <executions>
+                    <!-- Prepare agent before running unit tests -->
+                    <execution>
+                        <id>default-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- Generate report after tests finish -->
+                    <execution>
+                        <id>default-report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- Check line coverage rule (Minimum 80%) -->
+                    <execution>
+                        <id>default-check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.80</minimum> <!-- 80% coverage check -->
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                            <excludes>
+                                <!-- Exclude auto-generated OpenAPI / JaxRS sources if necessary -->
+                                <exclude>**/generated-sources/**</exclude>
+                            </excludes>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -140,56 +192,6 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <!-- JaCoCo Code Coverage Plugin -->
-        <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <version>0.8.11</version>
-            <executions>
-                <!-- Prepare agent before running unit tests -->
-                <execution>
-                    <id>default-prepare-agent</id>
-                    <goals>
-                        <goal>prepare-agent</goal>
-                    </goals>
-                </execution>
-
-                <!-- Generate report after tests finish -->
-                <execution>
-                    <id>default-report</id>
-                    <phase>test</phase>
-                    <goals>
-                        <goal>report</goal>
-                    </goals>
-                </execution>
-
-                <!-- Check line coverage rule (Minimum 80%) -->
-                <execution>
-                    <id>default-check</id>
-                    <goals>
-                        <goal>check</goal>
-                    </goals>
-                    <configuration>
-                        <rules>
-                            <rule>
-                                <element>BUNDLE</element>
-                                <limits>
-                                    <limit>
-                                        <counter>LINE</counter>
-                                        <value>COVEREDRATIO</value>
-                                        <minimum>0.80</minimum> <!-- 80% coverage check -->
-                                    </limit>
-                                </limits>
-                            </rule>
-                        </rules>
-                        <excludes>
-                            <!-- Exclude auto-generated OpenAPI / JaxRS sources if necessary -->
-                            <exclude>**/generated-sources/**</exclude>
-                        </excludes>
-                    </configuration>
-                </execution>
-            </executions>
-        </plugin>
                 </plugins>
             </build>
         </profile>
