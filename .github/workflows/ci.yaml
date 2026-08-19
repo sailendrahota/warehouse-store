@@ -1,0 +1,29 @@
+name: Java CI & Coverage Check
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+          # Tell setup-java where the pom.xml is for caching
+          cache-dependency-path: 'java-assignment/pom.xml'
+
+      - name: Build and run coverage check
+        # Execute Maven inside the java-assignment subfolder
+        working-directory: ./java-assignment
+        run: ./mvnw clean verify
