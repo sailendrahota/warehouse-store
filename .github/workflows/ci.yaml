@@ -37,16 +37,17 @@ jobs:
 
           if [ -f target/jacoco-report/jacoco.csv ]; then
             COVERAGE=$(awk -F',' '
-              NR==2 {
-                missed=$4
-                covered=$5
-                total=missed+covered
-                if (total > 0)
-                  printf "%.2f", (covered/total)*100
-              }
-            ' target/jacoco-report/jacoco.csv)
-
-            echo "**Line coverage: ${COVERAGE}%**" >> "$GITHUB_STEP_SUMMARY"
+              NR > 1 {
+                      missed += $8
+                     covered += $9
+                     }
+             END {
+            total = missed + covered
+            if (total > 0)
+            printf "%.2f", (covered / total) * 100
+           }
+           ' target/jacoco-report/jacoco.csv)
+          echo "**Line coverage: ${COVERAGE}%**" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "Detailed JaCoCo HTML report is available in the workflow artifact." >> "$GITHUB_STEP_SUMMARY"
           else
