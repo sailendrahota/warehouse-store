@@ -29,8 +29,8 @@ jobs:
         run: bash ./mvnw clean verify
 
       - name: Upload JaCoCo coverage report
-               - if: always()
-               - uses: actions/upload-artifact@v4
-               - with:
-               - name: jacoco-coverage-report
-               - path: java-assignment/target/jacoco-report/
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage-report
+          path: java-assignment/target/jacoco-report/
