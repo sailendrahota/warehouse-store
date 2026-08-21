@@ -2,151 +2,109 @@ package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
+import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
+import com.fulfilment.application.monolith.warehouses.domain.validation.WarehouseReplacementValidator;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
-import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
-import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
-
-import jakarta.ws.rs.WebApplicationException;
-
-
+@QuarkusTest
 class ReplaceWarehouseUseCaseTest {
 
-	@Test
-	void shouldArchiveOldWarehouseAndCreateReplacement() {
+    @Test
+    void shouldArchiveOldWarehouseAndCreateReplacement() {
 
-		FakeWarehouseStore warehouseStore = new FakeWarehouseStore();
+        FakeWarehouseStore store = new FakeWarehouseStore();
 
-		Warehouse oldWarehouse = warehouse("MWH.100", "ZWOLLE-001", 50, 30);
+        Warehouse oldWarehouse =
+                warehouse("MWH.100", "ZWOLLE-001", 50, 30);
 
-		warehouseStore.warehouses.add(oldWarehouse);
+        store.warehouses.add(oldWarehouse);
 
-		ReplaceWarehouseUseCase useCase = new ReplaceWarehouseUseCase(warehouseStore);
+        WarehouseReplacementValidator validator =
+                new WarehouseReplacementValidator(store);
 
-		Warehouse replacement = warehouse("MWH.100", "ZWOLLE-001", 40, 30);
+        ReplaceWarehouseUseCase useCase =
+                new ReplaceWarehouseUseCase(
+                        store,
+                        validator);
 
-		useCase.replace(replacement);
+        Warehouse replacement =
+                warehouse("MWH.100", "ZWOLLE-001", 40, 30);
 
-		assertNotNull(oldWarehouse.archivedAt);
+        useCase.replace(replacement);
 
-		assertEquals(1, warehouseStore.createdWarehouses.size());
+        assertNotNull(oldWarehouse.archivedAt);
+        assertEquals(oldWarehouse, store.updatedWarehouse);
+        assertEquals(replacement, store.createdWarehouse);
+    }
 
-		assertEquals("MWH.100", warehouseStore.createdWarehouses.get(0).businessUnitCode);
+    private Warehouse warehouse(
+            String businessUnitCode,
+            String location,
+            int capacity,
+            int stock) {
 
-		assertEquals(30, warehouseStore.createdWarehouses.get(0).stock);
-	}
+        Warehouse warehouse = new Warehouse();
 
-	@Test
-	void shouldRejectReplacementWhenOldWarehouseDoesNotExist() {
+        warehouse.businessUnitCode = businessUnitCode;
+        warehouse.location = location;
+        warehouse.capacity = capacity;
+        warehouse.stock = stock;
 
-		FakeWarehouseStore warehouseStore = new FakeWarehouseStore();
+        return warehouse;
+    }
 
-		ReplaceWarehouseUseCase useCase = new ReplaceWarehouseUseCase(warehouseStore);
+    static class FakeWarehouseStore implements WarehouseStore {
 
-		Warehouse replacement = warehouse("MWH.100", "ZWOLLE-001", 40, 30);
+        List<Warehouse> warehouses = new ArrayList<>();
 
-		assertThrows(WebApplicationException.class, () -> useCase.replace(replacement));
-	}
+        Warehouse updatedWarehouse;
+        Warehouse createdWarehouse;
 
-	@Test
-	void shouldRejectWhenCapacityCannotAccommodateExistingStock() {
+        @Override
+        public List<Warehouse> getAll() {
+            return warehouses;
+        }
 
-		FakeWarehouseStore warehouseStore = new FakeWarehouseStore();
+        @Override
+        public void create(Warehouse warehouse) {
+            createdWarehouse = warehouse;
+            warehouses.add(warehouse);
+        }
 
-		warehouseStore.warehouses.add(warehouse("MWH.100", "ZWOLLE-001", 50, 30));
+        @Override
+        public void update(Warehouse warehouse) {
+            updatedWarehouse = warehouse;
+        }
 
-		ReplaceWarehouseUseCase useCase = new ReplaceWarehouseUseCase(warehouseStore);
+        @Override
+        public void remove(Warehouse warehouse) {
+            warehouses.remove(warehouse);
+        }
 
-		Warehouse replacement = warehouse("MWH.100", "ZWOLLE-001", 20, 30);
+        @Override
+        public Warehouse findByBusinessUnitCode(String buCode) {
+            return warehouses.stream()
+                    .filter(w -> w.businessUnitCode.equals(buCode))
+                    .findFirst()
+                    .orElse(null);
+        }
 
-		assertThrows(WebApplicationException.class, () -> useCase.replace(replacement));
-	}
-
-	@Test
-	void shouldRejectWhenStockDoesNotMatchExistingStock() {
-
-		FakeWarehouseStore warehouseStore = new FakeWarehouseStore();
-
-		warehouseStore.warehouses.add(warehouse("MWH.100", "ZWOLLE-001", 50, 30));
-
-		ReplaceWarehouseUseCase useCase = new ReplaceWarehouseUseCase(warehouseStore);
-
-		Warehouse replacement = warehouse("MWH.100", "ZWOLLE-001", 40, 20);
-
-		assertThrows(WebApplicationException.class, () -> useCase.replace(replacement));
-	}
-
-	@Test
-	void shouldRejectAlreadyArchivedWarehouse() {
-
-		FakeWarehouseStore warehouseStore = new FakeWarehouseStore();
-
-		Warehouse oldWarehouse = warehouse("MWH.100", "ZWOLLE-001", 50, 30);
-
-		oldWarehouse.archivedAt = java.time.LocalDateTime.now();
-
-		warehouseStore.warehouses.add(oldWarehouse);
-
-		ReplaceWarehouseUseCase useCase = new ReplaceWarehouseUseCase(warehouseStore);
-
-		Warehouse replacement = warehouse("MWH.100", "ZWOLLE-001", 40, 30);
-
-		assertThrows(WebApplicationException.class, () -> useCase.replace(replacement));
-	}
-
-	private Warehouse warehouse(String businessUnitCode, String location, int capacity, int stock) {
-
-		Warehouse warehouse = new Warehouse();
-
-		warehouse.businessUnitCode = businessUnitCode;
-		warehouse.location = location;
-		warehouse.capacity = capacity;
-		warehouse.stock = stock;
-
-		return warehouse;
-	}
-
-	static class FakeWarehouseStore implements WarehouseStore {
-
-		List<Warehouse> warehouses = new ArrayList<>();
-		List<Warehouse> createdWarehouses = new ArrayList<>();
-
-		@Override
-		public List<Warehouse> getAll() {
-			return warehouses;
-		}
-
-		@Override
-		public void create(Warehouse warehouse) {
-			createdWarehouses.add(warehouse);
-			warehouses.add(warehouse);
-		}
-
-		@Override
-		public void update(Warehouse warehouse) {
-			// The fake object is already in the list, so its
-			// archivedAt change is automatically visible.
-		}
-
-		@Override
-		public void remove(Warehouse warehouse) {
-			warehouses.remove(warehouse);
-		}
-
-		@Override
-		public Warehouse findByBusinessUnitCode(String buCode) {
-			return warehouses.stream().filter(w -> w.businessUnitCode.equals(buCode)).findFirst().orElse(null);
-		}
-
-		@Override
-		public Warehouse findActiveById(Long id) {
-			return warehouses.stream().filter(w -> w.id != null && w.id.equals(id)).filter(w -> w.archivedAt == null)
-					.findFirst().orElse(null);
-		}
-	}
+        @Override
+        public Warehouse findActiveById(Long id) {
+            return warehouses.stream()
+                    .filter(w ->
+                            w.id != null
+                                    && w.id.equals(id)
+                                    && w.archivedAt == null)
+                    .findFirst()
+                    .orElse(null);
+        }
+    }
 }

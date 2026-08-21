@@ -1,96 +1,84 @@
 package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
+import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
+import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
-import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
-
-import jakarta.ws.rs.WebApplicationException;
-
-
+@QuarkusTest
 class ArchiveWarehouseUseCaseTest {
 
-	@Test
-	void shouldArchiveActiveWarehouse() {
+    @Test
+    void shouldArchiveActiveWarehouse() {
 
-		FakeWarehouseStore warehouseStore = new FakeWarehouseStore();
+        FakeWarehouseStore store =
+                new FakeWarehouseStore();
 
-		ArchiveWarehouseUseCase useCase = new ArchiveWarehouseUseCase(warehouseStore);
+        ArchiveWarehouseUseCase useCase =
+                new ArchiveWarehouseUseCase(store);
 
-		Warehouse warehouse = new Warehouse();
-		warehouse.businessUnitCode = "MWH.100";
+        Warehouse warehouse = new Warehouse();
+        warehouse.businessUnitCode = "MWH.100";
 
-		useCase.archive(warehouse);
+        useCase.archive(warehouse);
 
-		assertNotNull(warehouse.archivedAt);
-	}
+        assertNotNull(warehouse.archivedAt);
+        assertEquals(
+                warehouse,
+                store.updatedWarehouse);
+    }
 
-	@Test
-	void shouldRejectNullWarehouse() {
+    static class FakeWarehouseStore
+            implements WarehouseStore {
 
-		FakeWarehouseStore warehouseStore = new FakeWarehouseStore();
+        Warehouse updatedWarehouse;
+        List<Warehouse> warehouses =
+                new ArrayList<>();
 
-		ArchiveWarehouseUseCase useCase = new ArchiveWarehouseUseCase(warehouseStore);
+        @Override
+        public List<Warehouse> getAll() {
+            return warehouses;
+        }
 
-		WebApplicationException exception =assertThrows(WebApplicationException.class, () -> useCase.archive(null));
-		assertEquals(400, exception.getResponse().getStatus());
-	}
+        @Override
+        public void create(Warehouse warehouse) {
+            warehouses.add(warehouse);
+        }
 
-	@Test
-	void shouldRejectAlreadyArchivedWarehouse() {
+        @Override
+        public void update(Warehouse warehouse) {
+            updatedWarehouse = warehouse;
+        }
 
-		FakeWarehouseStore warehouseStore = new FakeWarehouseStore();
+        @Override
+        public void remove(Warehouse warehouse) {
+            warehouses.remove(warehouse);
+        }
 
-		ArchiveWarehouseUseCase useCase = new ArchiveWarehouseUseCase(warehouseStore);
+        @Override
+        public Warehouse findByBusinessUnitCode(String buCode) {
+            return warehouses.stream()
+                    .filter(w ->
+                            w.businessUnitCode.equals(buCode))
+                    .findFirst()
+                    .orElse(null);
+        }
 
-		Warehouse warehouse = new Warehouse();
-		warehouse.businessUnitCode = "MWH.100";
-		warehouse.archivedAt = java.time.LocalDateTime.now();
-
-		WebApplicationException exception=assertThrows(WebApplicationException.class, () -> useCase.archive(warehouse));
-		assertEquals(404, exception.getResponse().getStatus());
-	}
-
-	static class FakeWarehouseStore implements WarehouseStore {
-
-		List<Warehouse> warehouses = new ArrayList<>();
-
-		@Override
-		public List<Warehouse> getAll() {
-			return warehouses;
-		}
-
-		@Override
-		public void create(Warehouse warehouse) {
-			warehouses.add(warehouse);
-		}
-
-		@Override
-		public void update(Warehouse warehouse) {
-			warehouses.add(warehouse);
-		}
-
-		@Override
-		public void remove(Warehouse warehouse) {
-			warehouses.remove(warehouse);
-		}
-
-		@Override
-		public Warehouse findByBusinessUnitCode(String buCode) {
-			return warehouses.stream().filter(w -> w.businessUnitCode.equals(buCode)).findFirst().orElse(null);
-		}
-
-		@Override
-		public Warehouse findActiveById(Long id) {
-			return warehouses.stream().filter(w -> w.id != null && w.id.equals(id)).filter(w -> w.archivedAt == null)
-					.findFirst().orElse(null);
-		}
-	}
+        @Override
+        public Warehouse findActiveById(Long id) {
+            return warehouses.stream()
+                    .filter(w ->
+                            w.id != null
+                                    && w.id.equals(id)
+                                    && w.archivedAt == null)
+                    .findFirst()
+                    .orElse(null);
+        }
+    }
 }

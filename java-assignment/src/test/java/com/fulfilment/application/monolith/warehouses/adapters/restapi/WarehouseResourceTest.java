@@ -49,7 +49,7 @@ class WarehouseResourceTest {
 				  "capacity": 10,
 				  "stock": 5
 				}
-				""").when().post("/warehouse").then().statusCode(404);
+				""").when().post("/warehouse").then().statusCode(400);
 	}
 
 	@Test

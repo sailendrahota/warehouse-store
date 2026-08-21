@@ -1,19 +1,13 @@
 package com.fulfilment.application.monolith.stores;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
-import jakarta.transaction.Status;
-import jakarta.transaction.Synchronization;
 import jakarta.transaction.TransactionSynchronizationRegistry;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.ExceptionMapper;
-import jakarta.ws.rs.ext.Provider;
 import org.jboss.logging.Logger;
 
 import java.util.List;
@@ -28,9 +22,8 @@ public class StoreResource {
     @Inject
     LegacyStoreManagerGateway legacyStoreManagerGateway;
     @Inject
-    Event<StoreUpdateEvent> storeUpdatedEvent;
-    @Inject
-    TransactionSynchronizationRegistry transactionSynchronizationRegistry;
+    Event<StoreChangedEvent> storeChangedEvent;
+
 
     @GET
     public List<Store> get() {
@@ -53,11 +46,8 @@ public class StoreResource {
         if (store.id != null) {
             throw new WebApplicationException("Id was invalidly set on request.", 422);
         }
-
         store.persist();
-        storeUpdatedEvent.fire( new StoreUpdateEvent( store, StoreUpdateEvent.ChangeType.CREATED));
-
-       // 	executeAfterCommit(() -> legacyStoreManagerGateway.createStoreOnLegacySystem(store));
+        storeChangedEvent.fire( new StoreChangedEvent( store, StoreChangedEvent.ChangeType.CREATED));
 
         return Response.ok(store).status(201).build();
     }
@@ -79,7 +69,9 @@ public class StoreResource {
         entity.name = updatedStore.name;
         entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
 
-        executeAfterCommit(() -> legacyStoreManagerGateway.updateStoreOnLegacySystem(entity));
+        storeChangedEvent.fire(new StoreChangedEvent(
+                        entity,
+                        StoreChangedEvent.ChangeType.UPDATED));
 
         return entity;
     }
@@ -105,8 +97,9 @@ public class StoreResource {
         if (entity.quantityProductsInStock != 0) {
             entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
         }
-
-        executeAfterCommit(() -> legacyStoreManagerGateway.updateStoreOnLegacySystem(entity));
+        storeChangedEvent.fire(new StoreChangedEvent(
+                entity,
+                StoreChangedEvent.ChangeType.UPDATED));
 
         return entity;
     }
@@ -123,49 +116,6 @@ public class StoreResource {
         return Response.status(204).build();
     }
 
-    private void executeAfterCommit(Runnable action) {
 
-        transactionSynchronizationRegistry.registerInterposedSynchronization(new Synchronization() {
 
-            @Override
-            public void beforeCompletion() {
-                // Nothing to do before commit.
-            }
-
-            @Override
-            public void afterCompletion(int status) {
-
-                if (status == Status.STATUS_COMMITTED) {
-                    action.run();
-                }
-            }
-        });
     }
-
-    @Provider
-    public static class ErrorMapper implements ExceptionMapper<Exception> {
-
-        @Inject
-        ObjectMapper objectMapper;
-
-        @Override
-        public Response toResponse(Exception exception) {
-            LOGGER.error("Failed to handle request", exception);
-
-            int code = 500;
-            if (exception instanceof WebApplicationException) {
-                code = ((WebApplicationException) exception).getResponse().getStatus();
-            }
-
-            ObjectNode exceptionJson = objectMapper.createObjectNode();
-            exceptionJson.put("exceptionType", exception.getClass().getName());
-            exceptionJson.put("code", code);
-
-            if (exception.getMessage() != null) {
-                exceptionJson.put("error", exception.getMessage());
-            }
-
-            return Response.status(code).entity(exceptionJson).build();
-        }
-    }
-}

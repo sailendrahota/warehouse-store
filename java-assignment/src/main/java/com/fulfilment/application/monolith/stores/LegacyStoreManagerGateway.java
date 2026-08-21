@@ -10,14 +10,25 @@ import java.nio.file.Path;
 @ApplicationScoped
 public class LegacyStoreManagerGateway {
 
-    public void createStoreOnLegacySystem(@Observes(during = TransactionPhase.AFTER_SUCCESS)
-                                          StoreUpdateEvent storeUpdateEvent) {
-        // just to emulate as this would send this to a legacy system, let's write a
-        // temp file with the
-        writeToFile(storeUpdateEvent.store());
+    public void onStoreChanged(
+            @Observes(during = TransactionPhase.AFTER_SUCCESS)
+            StoreChangedEvent event) {
+
+        if (event.type() == StoreChangedEvent.ChangeType.CREATED) {
+            createStoreOnLegacySystem( event.store());
+
+        } else if (event.type() == StoreChangedEvent.ChangeType.UPDATED) {
+            updateStoreOnLegacySystem(event.store());
+        }
     }
 
-    public void updateStoreOnLegacySystem(Store store) {
+    private void createStoreOnLegacySystem(Store store) {
+        // just to emulate as this would send this to a legacy system, let's write a
+        // temp file with the
+        writeToFile(store);
+    }
+
+    private void updateStoreOnLegacySystem(Store store) {
         // just to emulate as this would send this to a legacy system, let's write a
         // temp file with the
         //TODO cdi event observer impl

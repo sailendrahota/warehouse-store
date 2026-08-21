@@ -1,38 +1,28 @@
 package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
-import java.time.LocalDateTime;
-
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ArchiveWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
+import com.fulfilment.application.monolith.warehouses.domain.validation.WarehouseArchiveValidator;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.WebApplicationException;
+
+import java.time.LocalDateTime;
 
 @ApplicationScoped
 public class ArchiveWarehouseUseCase implements ArchiveWarehouseOperation {
 
-  private final WarehouseStore warehouseStore;
-
-  public ArchiveWarehouseUseCase(WarehouseStore warehouseStore) {
-    this.warehouseStore = warehouseStore;
-  }
-  @Override
-  @Transactional
-  public void archive(Warehouse warehouse) {
-
-    if (warehouse == null) {
-      throw new  WebApplicationException("Warehouse cannot be null.",400);
+    private final WarehouseStore warehouseStore;
+    public ArchiveWarehouseUseCase(WarehouseStore warehouseStore) {
+        this.warehouseStore = warehouseStore;
     }
 
-    if (warehouse.archivedAt != null) {
-      throw new  WebApplicationException(
-          "Warehouse " + warehouse.businessUnitCode + " is already archived.",404);
+    @Override
+    @Transactional
+    public void archive(Warehouse warehouse) {
+        WarehouseArchiveValidator.validate(warehouse);
+
+        warehouse.archivedAt = LocalDateTime.now();
+        warehouseStore.update(warehouse);
     }
-
-    warehouse.archivedAt = LocalDateTime.now();
-
-    warehouseStore.update(warehouse);
-  }
-
 }

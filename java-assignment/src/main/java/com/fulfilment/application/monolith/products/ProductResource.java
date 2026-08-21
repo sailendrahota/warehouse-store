@@ -92,7 +92,7 @@ public class ProductResource {
     return Response.status(204).build();
   }
 
-  @Provider
+  /*@Provider
   public static class ErrorMapper implements ExceptionMapper<Exception> {
 
     @Inject ObjectMapper objectMapper;
@@ -116,5 +116,5 @@ public class ProductResource {
 
       return Response.status(code).entity(exceptionJson).build();
     }
-  }
+  }*/
 }

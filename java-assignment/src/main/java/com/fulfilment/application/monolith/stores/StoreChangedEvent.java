@@ -1,6 +1,6 @@
 package com.fulfilment.application.monolith.stores;
 
-public record StoreUpdateEvent(
+public record StoreChangedEvent(
         Store store,
         ChangeType type) {
 
