@@ -42,10 +42,7 @@ public class FulfillmentRepository implements FulfillmentStore, PanacheRepositor
     }
 
     @Override
-    public boolean exists(
-            Long storeId,
-            Long productId,
-            Long warehouseId) {
+    public boolean exists(Long storeId, Long productId, Long warehouseId) {
 
         return find(
                 "storeId = ?1 and productId = ?2 and warehouseId = ?3",
@@ -60,22 +57,38 @@ public class FulfillmentRepository implements FulfillmentStore, PanacheRepositor
             Long storeId,
             Long productId) {
 
-        return count(
+        return find(
                 "storeId = ?1 and productId = ?2",
                 storeId,
-                productId);
+                productId)
+                .stream()
+                .map(f -> f.warehouseId)
+                .distinct()
+                .count();
     }
 
     @Override
     public long countWarehousesForStore(Long storeId) {
 
-        return count("storeId = ?1", storeId);
+        return find(
+                "storeId = ?1",
+                storeId)
+                .stream()
+                .map(f -> f.warehouseId)
+                .distinct()
+                .count();
     }
 
     @Override
     public long countProductsForWarehouse(Long warehouseId) {
 
-        return count("warehouseId = ?1", warehouseId);
+        return find(
+                "warehouseId = ?1",
+                warehouseId)
+                .stream()
+                .map(f -> f.productId)
+                .distinct()
+                .count();
     }
 
     @Override
